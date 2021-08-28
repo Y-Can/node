@@ -6,21 +6,16 @@ let server = http.createServer()
 
 let url = require('url')
 
+
 server.on('request', function(request, response) {
 
-    fs.readFile('index.html', (err, data) => {
-
-        response.writeHead(200)
-
-        let query = url.parse(request.url, true).query
-        
-        response.end('Bonjour' + query.name)
+    let query = url.parse(request.url, true).query
+    let name = query.name === undefined ? 'anonyme' : query.name
+    
+    fs.readFile('index.html','utf8', (err, data) => {
 
 
-    })
-})
 
-        /*
 
         if (err) {
             response.writeHead(404)
@@ -28,14 +23,17 @@ server.on('request', function(request, response) {
             response.end("ce fichier n'existe pas")
         }
 
-        response.writeHead(200)
+        response.writeHead(200, {
+            'Content-Type': 'text/html; charset=utf-8'
+        })
 
+        data = data.replace('{{ name }}', name)
         response.end(data)
 
-   })
+  })
 })
 
-*/
+
 
 
 server.listen('8080')
