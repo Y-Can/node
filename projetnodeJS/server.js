@@ -1,39 +1,64 @@
-let http = require('http');
+let express = require('express')
 
-let fs = require('fs')
+let app = express()
 
-let server = http.createServer()
+let bodyParser = require('body-parser')
 
-let url = require('url')
+let session = require('express-session')
 
-
-server.on('request', function(request, response) {
-
-    let query = url.parse(request.url, true).query
-    let name = query.name === undefined ? 'anonyme' : query.name
-    
-    fs.readFile('index.html','utf8', (err, data) => {
+//moteur de tempalates
+app.set('view engine', 'ejs')
 
 
+// Midlleware
+
+app.use(express.static('public'))
+
+// parse application/x-www-form-urlencoded
+app.use(bodyParser.urlencoded({ extended: false }))
+// parse application/json
+app.use(bodyParser.json())
 
 
-        if (err) {
-            response.writeHead(404)
-            
-            response.end("ce fichier n'existe pas")
-        }
+app.use(session({
+  secret: 'hdhhvcb',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: false }
+}))
 
-        response.writeHead(200, {
-            'Content-Type': 'text/html; charset=utf-8'
-        })
+app.use(require('./middlewares/flash.js'))
 
-        data = data.replace('{{ name }}', name)
-        response.end(data)
+// Routes
 
-  })
+app.get('/', (request, response) =>{
+    let Message = require('./models/message.js')
+
+    Message.all(function(messages){
+        response.render('pages/index.ejs', {messages: messages})
+    })
+
+})
+
+app.post('/', (request, response) =>{
+    if (request.body.message === undefined || request.body.message === ''){
+        request.flash('error', "Vous n'avez pas posté de message")
+        response.redirect('/')
+
+        
+    } else{
+
+        let Message = require('./models/message')
+
+                Message.create(request.body.message, function() {
+
+                    request.flash('sucess',"Merci !")
+
+                    response.redirect('/')
+
+                })
+    }
 })
 
 
-
-
-server.listen('8080')
+app.listen(8000)
